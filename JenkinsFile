@@ -1,0 +1,61 @@
+pipeline {
+    agent any 
+   
+   stages { 
+    
+     stage('Preparation') { 
+       
+      steps {
+      slackSend color: "good", message: "Status: DEPLOYING CLOUD INFRA | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER} "
+      git 'https://github.com/ishrivatsa/demo-secure-state.git'
+      sh 'git checkout version_0.2'
+     }
+           
+   }
+   
+    stage('Install TF Dependencies') {
+      steps{
+        sh "sudo apt install wget zip python-pip -y"
+        sh "curl -o terraform.zip https://releases.hashicorp.com/terraform/0.11.12/terraform_0.11.12_linux_amd64.zip"
+        sh "unzip terraform.zip"
+        sh "sudo mv terraform /usr/bin"
+        sh "rm -rf terraform.zip"
+      }       
+    }
+    
+    
+    stage('Apply') {
+   
+           environment {
+            
+            TF_VAR_option_5_aws_ssh_key_name = "adminKey"
+            TF_VAR_option_6_aws_ssh_key_name = "adminKey"
+            AWS_ACCESS_KEY_ID= credentials('ACCESS_KEY_ID')
+            AWS_SECRET_ACCESS_KEY= credentials('SECRET_KEY')
+            AWS_DEFAULT_REGION="us-west-1"
+            
+        }
+   
+    steps {
+        
+        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=acme-fitcycle\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-east-1\" -lock=false && terraform apply --input=false --var-file=example_vars_files/us_west_1_mysql.tfvars --auto-approve"
+        sh "cd fitcycle_terraform && terraform output --json > Terraform_Output.json"
+    }
+  }
+
+ }
+       post {
+           
+        success {
+            slackSend color: "good", message: "Status: PIPELINE ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+            archiveArtifacts artifacts: 'fitcycle_terraform/Terraform_Output.json', fingerprint: true
+            archiveArtifacts artifacts: 'violations.py', fingerprint: true
+        }
+        failure {
+            slackSend color: "danger", message: "Status: PIPELINE ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+        }
+        aborted {
+            slackSend color: "warning", message: "Status: PIPELINE ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+        }
+    }
+}
