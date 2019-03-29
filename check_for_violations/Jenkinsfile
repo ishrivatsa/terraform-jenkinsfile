@@ -1,0 +1,57 @@
+pipeline {
+    agent any
+  
+   stages {
+    stage('Install SecureState Dependencies') {
+        
+        environment {
+            SS_ACCESS_KEY = credentials('SECURE_STATE_ACCESS_KEY')
+            SS_SECRET_KEY = credentials('SECURE_STATE_SECRET_KEY')
+            SS_TEAM_ID = credentials('SECURE_STATE_TEAM_ID')
+        }
+        
+      steps{
+        sh "wget -q -O vss https://github.com/CloudCoreo/cli/releases/download/v0.0.33/vss_linux_amd64"
+        sh "chmod +x vss"
+        sh "./vss cloud list --api-key $SS_ACCESS_KEY --api-secret $SS_SECRET_KEY --team-id $SS_TEAM_ID"
+        sh "touch vss_result_object.txt"
+        sh "sudo ./vss result object --api-key $SS_ACCESS_KEY --api-secret $SS_SECRET_KEY --team-id $SS_TEAM_ID > vss_result_object.txt"
+      }       
+    }
+   
+    stage('Copy Artifacts') {
+     steps { 
+         step ([$class: 'CopyArtifact',
+          projectName: 'fitcycle_pipeline',
+          filter: 'fitcycle_terraform/Terraform_Output.json']);
+          
+          step ([$class: 'CopyArtifact',
+          projectName: 'fitcycle_pipeline',
+          filter: 'violations.py']);
+     }      
+    }
+    stage('Check for Violations') {
+        steps {
+            slackSend color: "good", message: "Status: CHECKING FOR VIOLATIONS | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+            sh "mv fitcycle_terraform/Terraform_Output.json ."
+            sh "python violations.py > output.txt"
+        }
+    }
+    stage('Verify') {
+        steps {
+              script {
+                    env.VIOLATION_FOUND = readFile 'output.txt'
+                }
+            echo "Violation Reported : ${env.VIOLATION_FOUND}"
+            build job: 'Fitcycle_Redeploy_Pipeline', parameters: [[$class: 'BooleanParameterValue', name: 'VIOLATION_FOUND', value: "${env.VIOLATION_FOUND}"]]
+            
+        }
+    }
+   }
+   post {
+        
+        aborted {
+            slackSend color: "warning", message: "Status: ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+        }
+   }
+}
