@@ -1,0 +1,79 @@
+pipeline {
+    agent any 
+
+   stages { 
+    
+     stage('Preparation') { 
+      when {
+                expression { params.VIOLATION_FOUND == true }
+            }
+      steps {
+          cleanWs deleteDirs: true
+          slackSend (color: "good", message: "Status: STARTED RE-DEPLOYMENT | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}")
+          git 'https://github.com/ishrivatsa/demo-secure-state.git'
+      }
+           
+   }
+   
+    stage('Install TF Dependencies') {
+            when {
+                expression { params.VIOLATION_FOUND == true }
+            }
+      steps{
+        sh "sudo apt install wget zip python-pip -y"
+        sh "curl -o terraform.zip https://releases.hashicorp.com/terraform/0.11.12/terraform_0.11.12_linux_amd64.zip"
+        sh "unzip terraform.zip"
+        sh "sudo mv terraform /usr/bin"
+        sh "rm -rf terraform.zip"
+      }       
+    }
+    
+    stage('Apply') {
+            when {
+                
+                expression { params.VIOLATION_FOUND == true }
+            }
+  
+        environment {
+            
+            TF_VAR_option_6_aws_ssh_key_name = "devKey"
+            AWS_ACCESS_KEY_ID= credentials('ACCESS_KEY_ID')
+            AWS_SECRET_ACCESS_KEY= credentials('SECRET_KEY')
+            
+        }
+   
+    steps {
+        
+        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=acme-fitcycle\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-east-1\" -lock=false && terraform apply --input=false --var-file=example_vars_files/us_west_1_mysql.tfvars --auto-approve"
+        sh "cd fitcycle_terraform && terraform output --json > Terraform_Output.json"
+    }
+  }
+  
+    stage('Send Notification') {
+        
+        steps {
+            script {
+                if (params.VIOLATION_FOUND == true) { 
+                    
+                    slackSend (color: "good", message: "Status: RE-DEPLOYED CLOUD INFRA | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}")
+                } else {
+                    slackSend (color: "warning" , message: "Status: VIOLATION DID NOT MATCH. SKIP RE-DEPLOY | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}")
+                }
+            }
+        }
+    }
+
+ }
+ 
+ post {
+        
+        success {
+            slackSend color: "good", message: "Status: PIPELINE ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+            
+        }
+        aborted {
+            slackSend color: "warning", message: "Status: ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+        }
+ }
+ 
+}
