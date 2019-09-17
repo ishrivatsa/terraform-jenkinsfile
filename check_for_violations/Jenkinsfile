@@ -2,22 +2,6 @@ pipeline {
     agent any
   
    stages {
-    stage('Install SecureState Dependencies') {
-        
-        environment {
-            SS_ACCESS_KEY = credentials('SECURE_STATE_ACCESS_KEY')
-            SS_SECRET_KEY = credentials('SECURE_STATE_SECRET_KEY')
-            SS_TEAM_ID = credentials('SECURE_STATE_TEAM_ID')
-        }
-        
-      steps{
-        sh "wget -q -O vss https://github.com/CloudCoreo/cli/releases/download/v0.0.33/vss_linux_amd64"
-        sh "chmod +x vss"
-        sh "./vss cloud list --api-key $SS_ACCESS_KEY --api-secret $SS_SECRET_KEY --team-id $SS_TEAM_ID"
-        sh "touch vss_result_object.txt"
-        sh "sudo ./vss result object --api-key $SS_ACCESS_KEY --api-secret $SS_SECRET_KEY --team-id $SS_TEAM_ID > vss_result_object.txt"
-      }       
-    }
    
     stage('Copy Artifacts') {
      steps { 
@@ -27,14 +11,18 @@ pipeline {
           
           step ([$class: 'CopyArtifact',
           projectName: 'fitcycle_pipeline',
-          filter: 'violations.py']);
+          filter: 'violations_using_api.py']);
      }      
     }
     stage('Check for Violations') {
+          environment {
+            REFRESH_TOKEN = credentials('SS_CSP_REFRESH_TOKEN')
+        }
+
         steps {
             slackSend color: "good", message: "Status: CHECKING FOR VIOLATIONS | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
             sh "mv fitcycle_terraform/Terraform_Output.json ."
-            sh "python violations.py > output.txt"
+            sh "python violations_using_api.py > output.txt"
         }
     }
     stage('Verify') {
