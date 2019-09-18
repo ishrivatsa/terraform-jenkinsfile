@@ -6,11 +6,11 @@ pipeline {
     stage('Copy Artifacts') {
      steps { 
          step ([$class: 'CopyArtifact',
-          projectName: 'fitcycle_pipeline',
+          projectName: 'Continuous Security_Deploy',
           filter: 'fitcycle_terraform/Terraform_Output.json']);
           
           step ([$class: 'CopyArtifact',
-          projectName: 'fitcycle_pipeline',
+          projectName: 'Continuous Security_Deploy',
           filter: 'violations_using_api.py']);
      }      
     }
