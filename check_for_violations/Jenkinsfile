@@ -31,8 +31,6 @@ pipeline {
               script {
                     env.VIOLATION_FOUND = readFile 'output.txt'
                 }
-            echo "Violation Reported : ${env.VIOLATION_FOUND}"
-            build job: 'Fitcycle_Redeploy_Pipeline', parameters: [[$class: 'BooleanParameterValue', name: 'VIOLATION_FOUND', value: "${env.VIOLATION_FOUND}"]]
             
         }
     }
