@@ -26,15 +26,7 @@ pipeline {
             sh "python violations_using_api.py"
         }
     }
-   # stage('Verify') {
-       # steps {
-       #       script {
-                    env.VIOLATION_FOUND = readFile 'output.txt'
-      #          }
-              
-     #   }
-    #}
-   #}
+
    post {
         
         aborted {
