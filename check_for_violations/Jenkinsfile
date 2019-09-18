@@ -26,11 +26,5 @@ pipeline {
             sh "python violations_using_api.py"
         }
     }
-   post {
-        
-        aborted {
-            slackSend color: "warning", message: "Status: ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
-        }
-   }
-}
-}
+    }
+ }
