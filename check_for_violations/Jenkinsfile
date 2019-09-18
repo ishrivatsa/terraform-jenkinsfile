@@ -23,18 +23,18 @@ pipeline {
             slackSend color: "good", message: "Status: CHECKING FOR VIOLATIONS | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
             sh "pip install requests"
             sh "mv fitcycle_terraform/Terraform_Output.json ."
-            sh "python violations_using_api.py > output.txt"
+            sh "python violations_using_api.py"
         }
     }
-    stage('Verify') {
-        steps {
-              script {
+   # stage('Verify') {
+       # steps {
+       #       script {
                     env.VIOLATION_FOUND = readFile 'output.txt'
-                }
-            
-        }
-    }
-   }
+      #          }
+              
+     #   }
+    #}
+   #}
    post {
         
         aborted {
