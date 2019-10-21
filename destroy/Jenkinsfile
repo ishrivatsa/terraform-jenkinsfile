@@ -6,7 +6,6 @@ pipeline {
       steps {
       slackSend color: "good", message: "Status: TERMINATING CLOUD INFRA | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER} "
       git 'https://github.com/ishrivatsa/demo-secure-state.git'
-      sh 'git checkout version_0.3'
       }
    }
    
