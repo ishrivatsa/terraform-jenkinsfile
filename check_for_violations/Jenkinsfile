@@ -6,11 +6,11 @@ pipeline {
     stage('Copy Artifacts') {
      steps { 
          step ([$class: 'CopyArtifact',
-          projectName: 'fitcycle_pipeline',
+          projectName: 'Continuous Security_Deploy',
           filter: 'fitcycle_terraform/Terraform_Output.json']);
           
           step ([$class: 'CopyArtifact',
-          projectName: 'fitcycle_pipeline',
+          projectName: 'Continuous Security_Deploy',
           filter: 'violations_using_api.py']);
      }      
     }
@@ -21,25 +21,10 @@ pipeline {
 
         steps {
             slackSend color: "good", message: "Status: CHECKING FOR VIOLATIONS | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
+            sh "pip install requests"
             sh "mv fitcycle_terraform/Terraform_Output.json ."
-            sh "python violations_using_api.py > output.txt"
+            sh "python violations_using_api.py"
         }
     }
-    stage('Verify') {
-        steps {
-              script {
-                    env.VIOLATION_FOUND = readFile 'output.txt'
-                }
-            echo "Violation Reported : ${env.VIOLATION_FOUND}"
-            build job: 'Fitcycle_Redeploy_Pipeline', parameters: [[$class: 'BooleanParameterValue', name: 'VIOLATION_FOUND', value: "${env.VIOLATION_FOUND}"]]
-            
-        }
     }
-   }
-   post {
-        
-        aborted {
-            slackSend color: "warning", message: "Status: ${currentBuild.result} | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER}"
-        }
-   }
-}
+ }

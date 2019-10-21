@@ -5,7 +5,8 @@ pipeline {
    stage('Preparation') { 
       steps {
       slackSend color: "good", message: "Status: TERMINATING CLOUD INFRA | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER} "
-      git 'https://github.com/vmwarecloudadvocacy/vcs-fitcycle-deployer.git'
+      git 'https://github.com/ishrivatsa/demo-secure-state.git'
+      sh 'git checkout version_0.3'
       }
    }
    
@@ -32,7 +33,7 @@ pipeline {
    
     steps {
         
-        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=acme-fitcycle\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-east-1\" -lock=false && terraform state pull &&terraform destroy --var-file=example_vars_files/us_west_1_mysql.tfvars --auto-approve"
+        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=secure-state-demo\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-west-1\" -lock=false && terraform state pull &&terraform destroy --var-file=example_vars_files/us_west_1_mysql.tfvars --auto-approve"
        
     }
   }
