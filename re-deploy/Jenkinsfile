@@ -36,7 +36,6 @@ pipeline {
   
         environment {
             
-            TF_VAR_option_6_aws_ssh_key_name = "devKey"
             AWS_ACCESS_KEY_ID= credentials('ACCESS_KEY_ID')
             AWS_SECRET_ACCESS_KEY= credentials('SECRET_KEY')
             
@@ -44,7 +43,7 @@ pipeline {
    
     steps {
         
-        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=acme-fitcycle\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-east-1\" -lock=false && terraform apply --input=false --var-file=example_vars_files/us_west_1_mysql.tfvars --auto-approve"
+        sh "cd fitcycle_terraform/ && terraform init --backend-config=\"bucket=acme-fitcycle\" --backend-config=\"key=terraform.tfstate\" --backend-config=\"region=us-east-1\" -lock=false && terraform apply --input=false --var-file=example_vars_files/us_west_1_mysql.tfvars --var option_5_aws_ssh_key_name=\"adminKey\" --var option_6_aws_ssh_key_name=\"devKey\" --auto-approve"
         sh "cd fitcycle_terraform && terraform output --json > Terraform_Output.json"
     }
   }

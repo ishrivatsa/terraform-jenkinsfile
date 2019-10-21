@@ -8,7 +8,6 @@ pipeline {
       steps {
       slackSend color: "good", message: "Status: DEPLOYING CLOUD INFRA | Job: ${env.JOB_NAME} | Build number ${env.BUILD_NUMBER} "
       git 'https://github.com/ishrivatsa/demo-secure-state.git'
-      sh 'git checkout version_0.3'
      }
            
    }
@@ -34,7 +33,6 @@ pipeline {
             TF_VAR_option_2_aws_secret_key = credentials('SECRET_KEY')
             AWS_ACCESS_KEY_ID= credentials('ACCESS_KEY_ID')
             AWS_SECRET_ACCESS_KEY= credentials('SECRET_KEY')
-            AWS_DEFAULT_REGION="us-west-1"
             
         }
    
